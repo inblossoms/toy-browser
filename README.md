@@ -1,4 +1,4 @@
-# super-tiny-browser
+# toy-browser
 
 ## 前置知识
 
