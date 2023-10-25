@@ -1,103 +1,142 @@
-const net = require('net')
+const net = require('net');
+const HTTPParser = require('./parser/httpParser');
+const HTMLParser = require('./parser/htmlParser');
+const images = require('images');
+const render = require('./render');
 
-// 信息收集
 class Request {
-  constructor(opts) {
-    this.method = opts.method || 'GET'
-    this.host = opts.host
-    this.port = opts.port || 80
-    this.path = opts.path || '/'
-    this.headers = opts.headers || {}
-    this.body = opts.body || {}
+  // @param method, url = host + port + path
+  // body: k/v
+  // headers
 
-    // http 协议中，headers 必须包含 Content-type 否者是无法解析的
+  constructor(options) {
+    this.method = options.method || 'GET';
+    this.host = options.host;
+    this.port = options.port || 80;
+    this.path = options.path || '/';
+    this.body = options.body || {};
+    this.headers = options.headers || {};
+
     if (!this.headers['Content-Type']) {
-      this.headers['Content-Type'] = 'application/x-www-form-urlencoded'
+      this.headers['Content-Type'] = 'application/x-www-form-urlencoded';
     }
 
     if (this.headers['Content-Type'] === 'application/json') {
-      this.bodyText = JSON.stringify(this.body)
+      this.bodyText = JSON.stringify(this.body);
     } else if (this.headers['Content-Type'] === 'application/x-www-form-urlencoded') {
-      this.bodyText = Object.keys(this.body).map(key => `${key} = ${encodeURIComponent(this.body[key])}`).join('&')
+      this.bodyText = Object.keys(this.body).map(key => `${key}=${encodeURIComponent(this.body[key])}`).join('&');
     }
-    this.headers['Content-Length'] = this.bodyText.length
+
+    this.headers['Content-Length'] = this.bodyText.length;
   }
 
-  /*
-   * - 设计支持已有的 connection 或者 diy 新的 connectin
-   * - 将收到的数据传递给parser
-   * - 根据 parser 的状态 resolve Promise
-   */
+  toString() {
+    return `${this.method} ${this.path} HTTP/1.1\r
+${Object.keys(this.headers).map(key => `${key}: ${this.headers[key]}`).join('\r\n')}
+\r
+${this.bodyText}`;
+  }
 
-  // 将请求真实发送到服务器 -> Promise
   send(connection) {
     return new Promise((resolve, reject) => {
-      const parser = new ResponseParser
-
+      const parser = new HTTPParser();
       if (connection) {
-        connection.write(this.toString())
+        connection.write(this.toString());
       } else {
         connection = net.createConnection({
           host: this.host,
-          port: this.port
+          port: this.port,
         }, () => {
-          connection.write(this.toString())
-        })
+          connection.write(this.toString());
+        });
       }
+
       connection.on('data', (data) => {
-        console.log(data.toString())
-        parser.receive(data.toString())
-          if (parser.isFinished) {
-            resolve(parser.response)
-            connection.end()
-          }
+        parser.receive(data.toString());
+        if (parser.isFinished) {
+          resolve(parser.response);
         }
-      )
-      connection.on('error', (error) => {
-        reject(error)
-        connection.end()
-      })
-    })
-  }
-  toString(){
-    return  `${this.method} ${this.path} HTTP/1.1\r\n
-      ${Object.keys(this.headers).map(key => `${key}:${this.headers[key]}`).join('\r\n')}\r\n\r\n
-      ${this.bodyText} 
-    `
+        connection.end();
+      });
+
+      connection.on('error', (err) => {
+        resolve(err);
+        connection.end();
+      });
+    });
   }
 }
 
-class ResponseParser {
-  constructor(string) {
-    // 循环 + receiverChar 实现状态机对字符串的处理
-    function receive(string){
-      for (let i = 0; i < string.length; i++) {
-        this.receiverChar(string.charAt(i))
-      }
-    }
-  }
-
-  // 状态机
-  receiverChar(char) {
-    //
-  }
-}
-
-// 从使用的角度上来设计接口的形式
 void async function () {
-  let request = new Request({
+  const request = new Request({
     method: 'POST',
     host: '127.0.0.1',
-    port: '8080',
-    path: '/',
+    port: '8088',
     headers: {
-      ['X-Foo2']: 'customed'
+      'X-Foo2': 'customed'
     },
     body: {
-      name: 'inblossoms'
+      name: 'inblossoms',
+	  age: 18,
     }
-  })
+  });
 
-  let response = await request.send()
-  console.log(response)
-}()
+  const response = await request.send();
+
+  // console.log(response.body);
+
+  const dom = HTMLParser.parseHTML(response.body);
+
+  const viewport = images(800, 600);
+
+  render(viewport, dom);
+
+  viewport.save('viewport.jpg');
+}();
+
+// const request = new Request({
+//   method: 'POST',
+//   host: '127.0.0.1',
+//   port: '8088',
+//   headers: {
+//     'X-Foo2': 'customed'
+//   },
+//   body: {
+//     name: 'winter'
+//   }
+// });
+
+// request.send();
+
+// const client = net.createConnection({
+//   host: '127.0.0.1',
+//   port: 8088,
+// }, () => {
+
+//   const request = new Request({
+//     method: 'POST',
+//     host: '127.0.0.1',
+//     port: '8088',
+//     headers: {
+//       'X-Foo2': 'customed'
+//     },
+//     body: {
+//       name: 'winter'
+//     }
+//   });
+
+//   console.log(request.toString());
+
+//   client.write(request.toString())
+
+//   // 'connect' listener.
+//   console.log('connected to server!');
+//   // client.write('POST / HTTP/1.1\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: 11\r\n\r\nname=winter');
+// });
+// client.on('data', (data) => {
+//   console.log(data.toString());
+//   client.end();
+// });
+// client.on('end', () => {
+//   console.log('disconnected from server');
+// });
