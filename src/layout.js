@@ -1,8 +1,13 @@
+/**
+ * 对样式进行一些预处理
+ * @param element
+ * @returns {*|{}}
+ */
 function getStyle(element) {
     if (!element.style)
-        element.style = {};
+        element.style = {}; // 存储最终计算后的属性
 
-    console.log("----style----");
+    console.log("----layout: processing style----");
     for (let prop in element.computedStyle) {
         console.log(prop);
         var p = element.computedStyle.value;
@@ -26,7 +31,7 @@ function layout(element) {
 
     if (elementStyle.display !== 'flex')
         return;
-
+    // 过滤文本节点
     var items = element.children.filter(e => e.type === 'element');
 
     items.sort(function (a, b) {
@@ -35,14 +40,15 @@ function layout(element) {
 
     var style = elementStyle;
 
-
+    // 属性置为空 方便下面的判断
     ['width', 'height'].forEach(size => {
         if (style[size] === 'auto' || style[size] === '') {
             style[size] = null;
         }
     })
 
-
+    // flex 的处理流程
+    // 1. 基础属性值初始化
     if (!style.flexDirection || style.flexDirection === 'auto')
         style.flexDirection = 'row';
     if (!style.alignItems || style.alignItems === 'auto')
@@ -56,13 +62,15 @@ function layout(element) {
 
     var mainSize, mainStart, mainEnd, mainSign, mainBase,
         crossSize, crossStart, crossEnd, crossSign, crossBase;
+    // 主轴：row 的情况下的属性
     if (style.flexDirection === 'row') {
         mainSize = 'width';
         mainStart = 'left';
         mainEnd = 'right';
+        // 坐标的位置基准
         mainSign = +1;
         mainBase = 0;
-
+        // 设置当前主轴对应的侧轴属性
         crossSize = 'height';
         crossStart = 'top';
         crossEnd = 'bottom';
@@ -112,41 +120,46 @@ function layout(element) {
         crossSign = 1;
     }
 
-
+    // 当主轴尺寸未设置时 由其内部子元素自动撑开
     var isAutoMainSize = false;
     if (!style[mainSize]) {//auto sizing
         elementStyle[mainSize] = 0;
+        // 子元素的 size++ === 主轴尺寸
         for (var i = 0; i < items.length; i++) {
             var item = items[i];
             if (itemStyle[mainSize] !== null || itemStyle[mainSize] !== (void 0))
                 elementStyle[mainSize] = elementStyle[mainSize] + itemStyle[mainSize];
         }
+        // 这样就可以做到任何子元素都可以排入到同一行中
         isAutoMainSize = true;
         // style.flexWrap = 'nowrap';
     }
 
 
-
+    // 收集元素进行
     var flexLine = [];
+    // 所有行进组 至少存在一行
     var flexLines = [flexLine];
 
+    // 剩余空间 === 父级元素的 main size 主轴尺寸
     var mainSpace = elementStyle[mainSize];
     var crossSpace = 0;
 
+    // 计算子元素尺寸
     for (var i = 0; i < items.length; i++) {
         var item = items[i];
         var itemStyle = getStyle(item);
-
+        // 未设置为 0
         if (itemStyle[mainSize] === null) {
             itemStyle[mainSize] = 0;
         }
 
-
-
+        // 子元素存在 flex 属性，则认为可伸缩
         if (itemStyle.flex) {
             flexLine.push(item);
         } else if (style.flexWrap === 'nowrap' && isAutoMainSize) {
             mainSpace -= itemStyle[mainSize];
+            // 计算行高 取交叉轴上子元素 height 最大值
             if (itemStyle[crossSize] !== null && itemStyle[crossSize] !== (void 0))
                 crossSpace = Math.max(crossSpace, itemStyle[crossSize]);
             flexLine.push(item);
@@ -154,10 +167,12 @@ function layout(element) {
             if (itemStyle[mainSize] > style[mainSize]) {
                 itemStyle[mainSize] = style[mainSize];
             }
+            // 主轴空间 < 小于子元素累加后的所需空间 则换行，
             if (mainSpace < itemStyle[mainSize]) {
                 flexLine.mainSpace = mainSpace;
                 flexLine.crossSpace = crossSpace;
-                flexLine = [item];
+                flexLine = [item]; // 创建新行
+                // 初始化属性
                 flexLines.push(flexLine);
                 mainSpace = style[mainSize];
                 crossSpace = 0;
@@ -169,6 +184,7 @@ function layout(element) {
             mainSpace -= itemStyle[mainSize];
         }
     }
+
     flexLine.mainSpace = mainSpace;
 
     if (style.flexWrap === 'nowrap' || isAutoMainSize) {
@@ -179,7 +195,8 @@ function layout(element) {
 
     if (mainSpace < 0) {
         //overflow (happens only if container is single line), scale every item
-        var scale = style[mainSize] / (style[mainSize] - mainSpace);
+        // 容器 style[mainSize] 主轴尺寸 - mainSpace => 期望尺寸
+        var scale = style[mainSize] / (style[mainSize] - mainSpace); // 等比压缩
         var currentMain = mainBase;
         for (var i = 0; i < items.length; i++) {
             var item = items[i];
@@ -265,10 +282,12 @@ function layout(element) {
     if (!style[crossSize]) {//auto sizing
         crossSpace = 0;
         elementStyle[crossSize] = 0;
+        // 交叉轴没有设定值 由子元素撑开
         for (var i = 0; i < flexLines.length; i++) {
             elementStyle[crossSize] = elementStyle[crossSize] + flexLines[i].crossSpace;
         }
     } else {
+        // 交叉轴有值 减去每一行的行高剩余空间，通过剩余行高进行行高的空间分配
         crossSpace = style[crossSize];
         for (var i = 0; i < flexLines.length; i++) {
             crossSpace -= flexLines[i].crossSpace;
