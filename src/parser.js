@@ -291,8 +291,7 @@ function doubleQuotedAttributeValue(c) {
   } else if (c == "\u0000") {
   } else if (c == EOF) {
   } else {
-    currentAttribute.value += c;
-    return doubleQuotedAttributeValue;
+    throw new Error(`unexpected charater ${c}`);
   }
 }
 
