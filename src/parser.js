@@ -2,10 +2,10 @@ const css = require("css");
 const EOF = Symbol("EOF");
 const layout = require("./layout.js");
 
+// let stack = [{ type: "document", children: [] }]; //doms树解析用的栈
+let stack = [];
 let currentToken = null;
 let currentAttribute = null;
-let stack = [{ type: "document", children: [] }]; //doms树解析用的栈
-
 let currentTextNode = null;
 
 let rules = [];
@@ -390,6 +390,7 @@ function afterAttributeName(c) {
 }
 
 module.exports.parseHTML = function parseHTML(html) {
+  stack = [{ type: "document", children: [] }]; //doms树解析用的栈
   let state = data;
   // console.log("parser:",html);
   //词法分析
