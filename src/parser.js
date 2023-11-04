@@ -217,7 +217,7 @@ function tagOpen(c) {
       type: "text",
       content: c,
     });
-    return;
+    return data;
   }
 }
 
