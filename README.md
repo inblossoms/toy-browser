@@ -2,6 +2,8 @@
 
 Through this repository, you will understand how browsers work.
 
+Requests are initiated when the url is entered, from fetching and parsing the content of the html file, to building the DOM, CSSOM tree, and so on.
+
 ### Usge
 
 ```shell
