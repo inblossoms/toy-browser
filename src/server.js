@@ -5,7 +5,7 @@ http
     let body = [];
     req
       .on("error", (err) => {
-        console.error(err);
+        console.error("err", err);
       })
       .on("data", (chunk) => {
         console.log("chunk", chunk);
@@ -15,7 +15,12 @@ http
         body = Buffer.concat(body).toString();
         console.log("body", body);
         res.writeHead(200, { "Content-Type": "text/html" });
-        res.end(
+        res.end(`hello world.`);
+      });
+  })
+  .listen("8088");
+console.log("server started port: 8088");
+
 `<html uname=inblossoms>
 <head>
    <style>
@@ -42,9 +47,4 @@ http
         <div class="c1"></div>
     </div>
 </body>
-</html>`
-        );
-      });
-  })
-  .listen("8088");
-console.log("server started port: 8088");
+</html>`;
