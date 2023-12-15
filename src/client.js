@@ -33,7 +33,7 @@ class Request {
   send(connection) {
     return new Promise((resolve, reject) => {
       const parser = new ResponseParser();
-      console.log("this", this);
+      //   console.log("this:", this);
       // 设计支持已有的 connection 或者自定义新建 connection
       if (connection) {
         connection.write(this.toString());
@@ -45,7 +45,7 @@ class Request {
             port: this.port,
           },
           () => {
-            console.log(connection);
+            // console.log("connection:", connection);
 
             connection.write(this.toString()); // 创建成功后 将内容写入
           }
@@ -244,7 +244,7 @@ void (async function () {
   });
 
   let response = await request.send();
-  console.log(response);
+  console.log("response", response);
   let dom = parser.parseHTML(response.body);
   console.log(JSON.stringify(dom, null, "    "));
   let viewport = images(800, 600);

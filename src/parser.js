@@ -129,7 +129,7 @@ function computeCSS(element) {
   }
 }
 
-//语法分析
+// 对所有状态机中的装有状态执行完毕后 在 emit 中统一输出
 function emit(token) {
   let top = stack[stack.length - 1];
   // console.log(token);
@@ -195,6 +195,7 @@ function data(c) {
     });
     return;
   } else {
+    // 当非开始、结束的状态，都可以把它理解成是文本节点
     emit({
       type: "text",
       content: c,
@@ -202,11 +203,11 @@ function data(c) {
     return data;
   }
 }
-
 function tagOpen(c) {
   if (c == "/") {
     return endTagOpen;
   } else if (c.match(/^[a-zA-Z]$/)) {
+    // 当遇到字母的时候的两种情况：开始元素或自封闭元素
     currentToken = {
       type: "startTag",
       tagName: "",
@@ -221,8 +222,10 @@ function tagOpen(c) {
   }
 }
 
+// 需要区分是
 function tagName(c) {
   if (c.match(/^[\t\n\f ]$/)) {
+    // html 中有效的四种空白符
     return beforeAttributeName;
   } else if (c == "/") {
     return selfClosingStartTag;
@@ -244,6 +247,7 @@ function beforeAttributeName(c) {
   } else if (c == "/" || c == ">" || c == EOF) {
     return afterAttributeName(c);
   } else if (c == "=") {
+    // 属性开始之前是一个 =，就代表是错误的 没有属性是以 = 开头的
     // return beforeAttributeName;
   } else {
     // return beforeAttributeName;
@@ -283,6 +287,7 @@ function beforeAttributeValue(c) {
 }
 
 // TODO
+// ""
 function doubleQuotedAttributeValue(c) {
   if (c == '"') {
     currentToken[currentAttribute.name] = currentAttribute.value;
@@ -294,6 +299,7 @@ function doubleQuotedAttributeValue(c) {
   }
 }
 
+// ''
 function singleQuotedAttributeValue(c) {
   if (c == "'") {
     currentToken[currentAttribute.name] = currentAttribute.value;
@@ -306,6 +312,7 @@ function singleQuotedAttributeValue(c) {
   }
 }
 
+// <div data-info="hello"class> data-info="hello"class="" 两个属性中间没有隔离的视为错误
 function afterQuotedAttributeValue(c) {
   if (c.match(/^[\t\n\f ]$/)) {
     return beforeAttributeName;
@@ -321,7 +328,7 @@ function afterQuotedAttributeValue(c) {
     return doubleQuotedAttributeValue;
   }
 }
-
+// 无引号
 function UnquotedAttributeValue(c) {
   if (c.match(/^[\t\n\f ]$/)) {
     currentToken[currentAttribute.name] = currentAttribute.value;
@@ -392,7 +399,7 @@ module.exports.parseHTML = function parseHTML(html) {
   stack = [{ type: "document", children: [] }]; //doms树解析用的栈
   let state = data;
   // console.log("parser:",html);
-  //词法分析
+  //词法分析 切换状态机状态
   for (let c of html) {
     state = state(c);
   }
