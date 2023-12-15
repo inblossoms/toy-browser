@@ -14,7 +14,7 @@ http
       .on("end", () => {
         body = Buffer.concat(body).toString();
         console.log("body", body);
-        res.writeHead(200, { "Content-Type": "text/" });
+        res.writeHead(200, { "Content-Type": "text/html" });
         res.end(`<html uname=inblossoms>
 		<head>
 		   <style>

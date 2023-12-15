@@ -131,7 +131,7 @@ function computeCSS(element) {
 
 // 对所有状态机中的装有状态执行完毕后 在 emit 中统一输出
 function emit(token) {
-  let top = stack[stack.length - 1];
+  let top = stack[stack.length - 1]; //任何的元素的父元素是它入栈前的栈顶
   // console.log(token);
 
   if (token.type == "startTag") {
@@ -151,10 +151,12 @@ function emit(token) {
     }
     //计算CSS
     computeCSS(element);
+    // 为开始标签元素时 入栈
     top.children.push(element);
-    // element.parent = top;
+    // element.parent = top; // 修改父级
 
     if (!token.isSelfClosing) {
+      // 自封闭元素 可视为入栈后立刻出栈
       stack.push(element);
     }
     currentTextNode = null;
@@ -168,12 +170,14 @@ function emit(token) {
       if (top.tagName === "style") {
         addCSSRules(top.children[0].content);
       }
+      // 在结束标签元素 出栈
       stack.pop();
     }
     //计算dom在浏览器显示的位置
     layout(top);
     currentTextNode = null;
   } else if (token.type === "text") {
+    // 多个文本节点需要合并
     if (currentTextNode == null) {
       currentTextNode = {
         type: "text",
