@@ -24,6 +24,8 @@ class Request {
         .map((key) => `${key}=${encodeURIComponent(this.body[key])}`)
         .join("&");
     }
+    // console.log("this.headers", this.headers);
+
     this.headers["Content-length"] = this.bodyText.length;
   }
 
@@ -31,6 +33,7 @@ class Request {
   send(connection) {
     return new Promise((resolve, reject) => {
       const parser = new ResponseParser();
+      console.log("this", this);
       // 设计支持已有的 connection 或者自定义新建 connection
       if (connection) {
         connection.write(this.toString());
@@ -42,13 +45,14 @@ class Request {
             port: this.port,
           },
           () => {
+            console.log(connection);
+
             connection.write(this.toString()); // 创建成功后 将内容写入
           }
         );
       }
       // 服务端返回的 数据
       connection.on("data", (data) => {
-        console.log("connection:", data.toString());
         // 将数据传递给 parser 解析， 通过 parser 状态 resolve Promise
         parser.receive(data.toString());
         if (parser.isFinished) {
@@ -57,7 +61,6 @@ class Request {
         connection.end(); // 关闭连接
       });
       connection.on("error", (err) => {
-        console.log(err);
         reject(err);
         connection.end();
       });
@@ -237,7 +240,6 @@ void (async function () {
     headers: { ["X-F002"]: "customed" },
     body: {
       name: "inblossoms",
-      message: "--------==--------",
     },
   });
 

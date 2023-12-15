@@ -1,5 +1,5 @@
 const css = require("css");
-const EOF = Symbol("EOF");
+const EOF = Symbol("EOF"); // eof: end of file
 const layout = require("./layout.js");
 
 // let stack = [{ type: "document", children: [] }]; //doms树解析用的栈
@@ -283,7 +283,6 @@ function beforeAttributeValue(c) {
 }
 
 // TODO
-
 function doubleQuotedAttributeValue(c) {
   if (c == '"') {
     currentToken[currentAttribute.name] = currentAttribute.value;
@@ -388,6 +387,7 @@ function afterAttributeName(c) {
   }
 }
 
+// HTML 标准为我们实现了状态机（可以在 HTML 标准中自行查看：Tokenization
 module.exports.parseHTML = function parseHTML(html) {
   stack = [{ type: "document", children: [] }]; //doms树解析用的栈
   let state = data;
