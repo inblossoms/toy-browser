@@ -180,7 +180,8 @@ function emit(token) {
       // 在结束标签元素 出栈
       stack.pop();
     }
-    //计算dom在浏览器显示的位置
+    // 计算dom在浏览器显示的位置
+    // flex: 子元素的存在一定是在父元素闭合标签之前，所以我们这里选择的时机就是 token's endtag
     layout(top);
     currentTextNode = null;
   } else if (token.type === "text") {
