@@ -21,7 +21,8 @@ function addCSSRules(text) {
   rules.push(...ast.stylesheet.rules);
 }
 
-//选择器是否匹配元素
+// 选择器是否匹配元素 <- id|class|tag ->
+// eg: params> elem: body  selector: #myid（最内层的选择器
 function match(element, selector) {
   if (!selector || !element.attributes) {
     return false;
@@ -86,14 +87,15 @@ function computeCSS(element) {
     element.computedStyle = {};
   }
   for (let rule of rules) {
-    //对选择器取反拿到最内层选择器
+    // selectorParts: 选择器集合 对选择器取反拿到最内层选择器
     var selectorParts = rule.selectors[0].split(" ").reverse();
+    // 查看选择器和当前元素 是否可以匹配
     if (!match(element, selectorParts[0])) {
       continue;
     }
 
     var j = 1;
-    //匹配当前元素的父元素是否能够匹配选择器
+    // 匹配当前元素的父元素 是否能够与选择器（复合选择器的每一项）匹配，得到完全匹配的 css 规则
     for (var i = 0; i < elements.length; i++) {
       if (match(elements[i], selectorParts[j])) {
         j++;
@@ -104,8 +106,9 @@ function computeCSS(element) {
       matched = true;
     }
     // 一旦选择匹配 就应用选择器到元素上 形成 computedStyle
+    // 将 style attrs 抄写到 elem
     if (matched) {
-      // console.log("Element",element,"matched rule",rule);
+      // console.log("Element", element, "matched rule", rule);
       var sp = specificity(rule.selectors[0]);
       var computedStyle = element.computedStyle;
       for (var declaration of rule.declarations) {
