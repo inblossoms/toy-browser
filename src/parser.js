@@ -15,7 +15,7 @@ let rules = [];
  * @param text
  */
 function addCSSRules(text) {
-  //调用css这个现成的库对css样式文本进行词法语法分析获取css的Ast
+  // 我们对 css 解析用到了 css （现成的库）对样式文本进行词法、语法分析 从而获取 css 的 Ast
   var ast = css.parse(text);
   // console.log(JSON.stringify(ast,null,4));
   rules.push(...ast.stylesheet.rules);
@@ -77,9 +77,11 @@ function compare(sp1, sp2) {
 }
 
 // 计算css
+// 通过 rules 来结合这里拿到的 html 元素进行结合 
 function computeCSS(element) {
   // console.log("compute CSS for Element",element);
-  var elements = stack.slice().reverse();
+  // 获取元素父级序列 我们需要获取元素的所有父级元素 来确定样式与元素是否匹配
+  var elements = stack.slice().reverse(); 
   if (!element.computedStyle) {
     element.computedStyle = {};
   }
@@ -143,13 +145,15 @@ function emit(token) {
     element.tagName = token.tagName;
     for (let p in token) {
       if (p != "type" && p != "tagName") {
+        // css 规则希望在解析到 html 元素在进入到 startTag 的时候就能够被判断（当随着新 css 规则的加入，此规则逐渐松动
         element.attributes.push({
           name: p,
           value: token[p],
         });
       }
     }
-    //计算CSS
+    // 每当创建一个元素时 则立即计算 css 规则 （ 理论上：当我们去分析一个元素时，我们的 css 属性已经收集完毕
+    // toybrowser 忽略了 body 中的外部 style 
     computeCSS(element);
     // 为开始标签元素时 入栈
     top.children.push(element);
@@ -166,7 +170,7 @@ function emit(token) {
     if (top.tagName != token.tagName) {
       throw new Error("tag start end doesn't match!");
     } else {
-      //遇到Style标签时，执行添加CSS规则的操作
+      //遇到Style标签时，保存 css 规则 （我们通过调用 CSS Parser 来解析 css
       if (top.tagName === "style") {
         addCSSRules(top.children[0].content);
       }
